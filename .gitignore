@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Tool output / local state
+output/
+*.sqlite
+*.xlsx
+*.json
+!records.sample.csv
+
+# Keep sample/doc assets that are JSON if any are added explicitly
+# (add exceptions with ! as needed)
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets / local config
+.env
+*.local
+
+# never commit real input lists
+*_records.csv
+!records.sample.csv

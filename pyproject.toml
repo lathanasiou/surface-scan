@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surface-scan"
+version = "1.0.0"
+description = "Defensive external attack-surface inventory: DNS, liveness, CDN/WAF and technology fingerprinting, with data-driven CVE advisory correlation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Leonidas Athanasiou" }]
+keywords = [
+    "security", "attack-surface", "asset-inventory", "external-attack-surface-management",
+    "easm", "reconnaissance", "technology-fingerprinting", "wappalyzer", "dns",
+    "cdn-detection", "waf-detection", "cve", "vulnerability-management", "blue-team",
+    "php", "nodejs", "fingerprinting", "subdomain", "liveness",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Internet :: Name Service (DNS)",
+    "Topic :: System :: Networking :: Monitoring",
+]
+dependencies = [
+    "dnspython>=2.6.0",
+    "httpx>=0.27.0",
+    "PyYAML>=6.0",
+    "openpyxl>=3.1.0",
+    "packaging>=24.0",
+    "rich>=13.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/YOURORG/surface-scan"
+Documentation = "https://github.com/YOURORG/surface-scan/tree/main/docs"
+Repository = "https://github.com/YOURORG/surface-scan"
+Issues = "https://github.com/YOURORG/surface-scan/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+surface-scan = "scan:main"
+
+[tool.setuptools]
+py-modules = ["scan"]
+packages = ["surfacescan"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

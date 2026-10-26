@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>surface-scan — Team Briefing</title>
+<style>
+/* Layout concept: full-viewport horizontal slide deck, terminal-influenced,
+   deep slate ground with a teal signal accent and amber for cautions. */
+:root{
+  --bg:#0e1420; --panel:#161f30; --panel-2:#1c2740; --line:#2a3752;
+  --fg:#e6edf7; --muted:#95a6c2; --faint:#64748b;
+  --accent:#34d3c2; --accent-2:#5aa0ff; --warn:#f2b250;
+  --bad:#f27a7a; --good:#5bd08a;
+  --mono:"SF Mono",ui-monospace,"JetBrains Mono","Cascadia Code",Consolas,Menlo,monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f4f7fb; --panel:#ffffff; --panel-2:#eef3fa; --line:#d9e2f0;
+    --fg:#111b2e; --muted:#4a5a74; --faint:#7c8aa3;
+    --accent:#0c9b8c; --accent-2:#2f6fe0; --warn:#b8770d; --bad:#c23b3b; --good:#1f9d5e;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f4f7fb; --panel:#ffffff; --panel-2:#eef3fa; --line:#d9e2f0;
+  --fg:#111b2e; --muted:#4a5a74; --faint:#7c8aa3;
+  --accent:#0c9b8c; --accent-2:#2f6fe0; --warn:#b8770d; --bad:#c23b3b; --good:#1f9d5e;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--sans);line-height:1.5;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+#deck{height:100%;width:100%;position:relative}
+.slide{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  padding:clamp(24px,5vw,72px);
+  padding-left:max(clamp(24px,5vw,72px),env(safe-area-inset-left,0px));
+  padding-right:max(clamp(24px,5vw,72px),env(safe-area-inset-right,0px));
+  padding-top:max(clamp(24px,4vw,56px),env(safe-area-inset-top,0px));
+  padding-bottom:max(72px,calc(env(safe-area-inset-bottom,0px) + 56px));
+  overflow-y:auto;animation:fade .35s ease;
+}
+.slide.active{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.slide{animation:none}}
+
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 .6rem}
+h1{font-size:clamp(2rem,6vw,4.2rem);line-height:1.02;margin:.2rem 0;
+  letter-spacing:-.02em;text-wrap:balance;font-weight:800}
+h2{font-size:clamp(1.5rem,3.6vw,2.5rem);margin:.1rem 0 1rem;letter-spacing:-.015em;
+  text-wrap:balance;font-weight:750}
+h3{font-size:1.05rem;margin:0 0 .35rem;font-weight:700}
+p{margin:.4rem 0;color:var(--fg)}
+.lead{font-size:clamp(1.05rem,2.1vw,1.4rem);color:var(--muted);max-width:60ch}
+.muted{color:var(--muted)}
+.faint{color:var(--faint)}
+code,.mono{font-family:var(--mono)}
+strong{color:var(--fg)}
+a{color:var(--accent-2)}
+
+.wrap{max-width:1100px;margin:0 auto;width:100%}
+.spacer{flex:1}
+
+/* title slide */
+.title-wrap{display:flex;flex-direction:column;justify-content:center;height:100%;max-width:960px;margin:0 auto}
+.badges{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.4rem}
+.badge{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;
+  border:1px solid var(--line);color:var(--muted);
+  padding:.3rem .6rem;border-radius:999px;background:var(--panel)}
+
+/* grids */
+.grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));width:100%}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:1.1rem 1.2rem;min-width:0}
+.card .k{font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--accent)}
+.card.alt .k{color:var(--accent-2)}
+.card ul{margin:.5rem 0 0;padding-left:1.1rem}
+.card li{margin:.2rem 0;color:var(--muted)}
+.card li b{color:var(--fg);font-weight:650}
+
+ul.clean{list-style:none;padding:0;margin:.5rem 0}
+ul.clean li{padding:.35rem 0;border-bottom:1px dashed var(--line);color:var(--muted)}
+ul.clean li:last-child{border-bottom:0}
+ul.clean li b{color:var(--fg)}
+
+/* function reference block */
+.fn{font-family:var(--mono);font-size:.82rem;color:var(--accent);background:var(--panel-2);
+  padding:.08rem .4rem;border-radius:6px;border:1px solid var(--line);white-space:nowrap}
+.fnrow{display:grid;grid-template-columns:minmax(180px,260px) 1fr;gap:.6rem 1rem;
+  padding:.5rem 0;border-bottom:1px solid var(--line);align-items:baseline}
+.fnrow:last-child{border-bottom:0}
+.fnrow .d{color:var(--muted);min-width:0}
+@media (max-width:640px){.fnrow{grid-template-columns:1fr}}
+
+/* code / terminal */
+pre{font-family:var(--mono);font-size:clamp(.72rem,1.4vw,.9rem);line-height:1.6;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:1rem 1.1rem;overflow-x:auto;margin:.6rem 0;color:var(--fg)}
+pre .c{color:var(--faint)}
+pre .g{color:var(--good)}
+pre .a{color:var(--accent)}
+pre .w{color:var(--warn)}
+
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:.5rem;margin:.6rem 0}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:.6rem .8rem;min-width:120px;flex:1}
+.step .t{font-weight:700;font-size:.92rem}
+.step .s{font-family:var(--mono);font-size:.72rem;color:var(--accent)}
+.step .s.alt{color:var(--accent-2)}
+.arrow{align-self:center;color:var(--faint);font-size:1.2rem}
+@media (max-width:640px){.arrow{transform:rotate(90deg)}}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:.72rem;
+  padding:.15rem .5rem;border-radius:999px;border:1px solid var(--line)}
+.pill.affected{color:var(--bad);border-color:var(--bad)}
+.pill.likely{color:var(--warn);border-color:var(--warn)}
+.pill.possible{color:var(--warn)}
+.pill.ok{color:var(--good);border-color:var(--good)}
+.pill.unknown{color:var(--muted)}
+
+.callout{border-left:3px solid var(--warn);background:var(--panel);
+  padding:.8rem 1rem;border-radius:0 10px 10px 0;margin:.6rem 0}
+.callout.good{border-left-color:var(--good)}
+.callout.accent{border-left-color:var(--accent)}
+
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin:.5rem 0}
+th,td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+td b{color:var(--fg)}
+.tablewrap{overflow-x:auto}
+
+/* chrome: progress, nav, counter */
+#bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30;transition:width .3s}
+#chrome{position:fixed;left:0;right:0;bottom:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.6rem max(16px,env(safe-area-inset-left,0px)) calc(.6rem + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));
+  background:linear-gradient(to top,var(--bg),transparent);pointer-events:none}
+#chrome>*{pointer-events:auto}
+.navbtns{display:flex;gap:.4rem}
+button.nav{font-family:var(--mono);font-size:.85rem;background:var(--panel);
+  color:var(--fg);border:1px solid var(--line);border-radius:8px;
+  padding:.4rem .7rem;cursor:pointer}
+button.nav:hover{border-color:var(--accent)}
+button.nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#counter{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+#brand{font-family:var(--mono);font-size:.8rem;color:var(--faint)}
+.dots{display:flex;gap:.3rem;flex-wrap:wrap;max-width:50vw;justify-content:center}
+.dot{width:8px;height:8px;border-radius:999px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.on{background:var(--accent)}
+#themebtn{font-family:var(--mono);font-size:.8rem;background:var(--panel);
+  color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;cursor:pointer}
+@media (max-width:720px){.dots{display:none}#brand{display:none}}
+kbd{font-family:var(--mono);font-size:.72rem;border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:.05rem .35rem;color:var(--muted)}
+.hint{font-family:var(--mono);font-size:.74rem;color:var(--faint);margin-top:1.2rem}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="deck">
+
+<!-- 1 TITLE -->
+<section class="slide active">
+  <div class="title-wrap">
+    <p class="eyebrow">Security Engineering · Team Briefing</p>
+    <h1>surface-scan</h1>
+    <p class="lead">A defensive external attack-surface inventory. Point it at the DNS records we own; it tells us what's live, what's in front of it, and what each host runs — so when the next critical advisory lands, we answer <em>"are we exposed, and where?"</em> in seconds.</p>
+    <div class="badges">
+      <span class="badge">Python 3.10+</span>
+      <span class="badge">MIT licensed</span>
+      <span class="badge">DNS · Liveness · CDN/WAF · Fingerprint</span>
+      <span class="badge">YAML-driven</span>
+      <span class="badge">No exploitation</span>
+    </div>
+    <p class="hint">Navigate with <kbd>←</kbd> <kbd>→</kbd> or <kbd>Space</kbd> · press <kbd>F</kbd> for fullscreen</p>
+  </div>
+</section>
+
+<!-- 2 WHY -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">The problem</p>
+    <h2>A CVE drops. Now what?</h2>
+    <p class="lead">The first question every time is the same — and answering it by hand across hundreds of hostnames is slow and error-prone.</p>
+    <div class="grid two" style="margin-top:1.2rem">
+      <div class="card">
+        <div class="k">Recent examples</div>
+        <ul>
+          <li><b>PHP2Shell</b> — CVE-2026-109618 / 109619, CVSS 9.2, exploited in the wild within a day</li>
+          <li><b>Node.js Brotli</b> — CVE-2026-111497, CVSS 9.8, OOB write</li>
+          <li><b>…and whatever lands next</b> — a framework, a web server, a CMS</li>
+        </ul>
+      </div>
+      <div class="card alt">
+        <div class="k">What we need</div>
+        <ul>
+          <li><b>Inventory once</b> — DNS, liveness, edge, stack</li>
+          <li><b>Correlate any advisory</b> against what we already know</li>
+          <li><b>Repeatable</b> — not a one-off script per CVE</li>
+          <li><b>Honest</b> — "likely, confirm" beats a false "clean"</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout accent" style="margin-top:1.2rem">
+      <b>Design stance:</b> presence first, version when visible. The default question is "is this technology in use here?" — answerable even when the version is hidden.
+    </div>
+  </div>
+</section>
+
+<!-- 3 WHAT IT REPORTS -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Output at a glance</p>
+    <h2>What it reports, per host</h2>
+    <div class="grid">
+      <div class="card"><div class="k">DNS</div><ul>
+        <li>A, AAAA, CNAME chain</li><li>MX, TXT, NS, CAA</li>
+        <li><b>Dangling CNAME</b> (takeover)</li><li>Private IP in public DNS</li></ul></div>
+      <div class="card"><div class="k">Liveness</div><ul>
+        <li>live · live_error</li><li>waf_blocked</li>
+        <li>filtered · refused</li><li>dangling · dns_fail</li></ul></div>
+      <div class="card"><div class="k">CDN / WAF</div><ul>
+        <li>Auto-detected</li><li>CNAME + headers + IP</li>
+        <li>Flags apps with <b>none</b></li><li>Confidence + evidence</li></ul></div>
+      <div class="card"><div class="k">Technology</div><ul>
+        <li>Language / runtime</li><li>Backend + frontend</li>
+        <li>CMS + web server</li><li>Version when visible</li></ul></div>
+      <div class="card"><div class="k">TLS</div><ul>
+        <li>Issuer</li><li>Expiry date</li>
+        <li>Near-expiry flag</li><li>Expired flag</li></ul></div>
+      <div class="card alt"><div class="k">Advisory verdict</div><ul>
+        <li><span class="pill affected">affected</span></li>
+        <li><span class="pill likely">likely</span> <span class="pill possible">possible</span></li>
+        <li><span class="pill ok">not-detected</span></li>
+        <li><span class="pill unknown">unknown</span></li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 ARCHITECTURE / FLOW -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>The pipeline</h2>
+    <p class="muted">Each host runs the full pipeline in a thread pool. One bad host never aborts the run.</p>
+    <div class="flow">
+      <div class="step"><div class="s">inputs</div><div class="t">Load</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s">dns_probe</div><div class="t">Resolve</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s">classify</div><div class="t">Classify</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s">http_probe</div><div class="t">Liveness + TLS</div></div>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="s">cdn</div><div class="t">CDN / WAF</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s">fingerprint</div><div class="t">Tech + version</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s alt">store</div><div class="t">History (SQLite)</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s alt">advisories</div><div class="t">Verdicts</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="s alt">report</div><div class="t">Excel + JSON</div></div>
+    </div>
+    <div class="callout accent" style="margin-top:1rem">
+      <b>Data, not code.</b> Add a technology by editing YAML signatures. Add a CVE by dropping a YAML advisory. No code changes for the next emergency.
+    </div>
+  </div>
+</section>
+
+<!-- 5 MODULE MAP -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Codebase</p>
+    <h2>Module map</h2>
+    <div class="grid">
+      <div class="card"><div class="k">scan.py</div><p class="muted">CLI entry + orchestrator</p></div>
+      <div class="card"><div class="k">models</div><p class="muted">Detection, HostResult</p></div>
+      <div class="card"><div class="k">inputs</div><p class="muted">CSV / XLSX / TXT loader</p></div>
+      <div class="card"><div class="k">dns_probe</div><p class="muted">DNS + hygiene flags</p></div>
+      <div class="card"><div class="k">doh</div><p class="muted">DNS-over-HTTPS fallback</p></div>
+      <div class="card"><div class="k">http_probe</div><p class="muted">Liveness · HTTP · TLS</p></div>
+      <div class="card"><div class="k">cdn</div><p class="muted">CDN / WAF detection</p></div>
+      <div class="card"><div class="k">classify</div><p class="muted">infra / saas / suspicious</p></div>
+      <div class="card"><div class="k">fingerprint</div><p class="muted">Signature engine</p></div>
+      <div class="card"><div class="k">advisories</div><p class="muted">CVE correlation</p></div>
+      <div class="card"><div class="k">externals</div><p class="muted">dnsx / httpx / nuclei</p></div>
+      <div class="card"><div class="k">store · report</div><p class="muted">SQLite · Excel/JSON</p></div>
+    </div>
+    <p class="hint">The next slides walk each module and its functions.</p>
+  </div>
+</section>
+
+<!-- 6 models + inputs -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · models.py + inputs.py</p>
+    <h2>Data model &amp; input loading</h2>
+    <div class="grid two">
+      <div class="card">
+        <div class="k">models.py</div>
+        <div class="fnrow"><span class="fn">Detection</span><span class="d">One tech found: name, category, version, confidence, evidence.</span></div>
+        <div class="fnrow"><span class="fn">HostResult</span><span class="d">Everything known about a host: DNS, edge, liveness, TLS, detections, verdicts.</span></div>
+        <div class="fnrow"><span class="fn">.tech_by_category()</span><span class="d">Detections in one category.</span></div>
+        <div class="fnrow"><span class="fn">.to_dict()</span><span class="d">JSON-serialisable form.</span></div>
+      </div>
+      <div class="card alt">
+        <div class="k">inputs.py</div>
+        <div class="fnrow"><span class="fn">load_records()</span><span class="d">Dispatch by extension → list of HostResult.</span></div>
+        <div class="fnrow"><span class="fn">_rows_to_hosts()</span><span class="d">Header detection, column mapping, validation, de-dup.</span></div>
+        <div class="fnrow"><span class="fn">_clean_host()</span><span class="d">Strip scheme/path/port, lower-case.</span></div>
+        <div class="fnrow"><span class="fn">_pick()</span><span class="d">Find a column by accepted names.</span></div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:.8rem">Accepts flexible columns — minimum is a hostname. <code>hostname,type,target</code> is the happy path.</p>
+  </div>
+</section>
+
+<!-- 7 dns_probe + doh -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · dns_probe.py + doh.py</p>
+    <h2>DNS resolution (with DoH fallback)</h2>
+    <div class="card">
+      <div class="k">dns_probe.py</div>
+      <div class="fnrow"><span class="fn">resolve_host()</span><span class="d">Main entry. Modes: <code>udp</code>, <code>doh</code>, <code>auto</code> (UDP then DoH fallback). Fills A/AAAA/CNAME chain/MX/TXT/NS/CAA.</span></div>
+      <div class="fnrow"><span class="fn">_follow_cname()</span><span class="d">Walk the CNAME chain; detect dangling targets.</span></div>
+      <div class="fnrow"><span class="fn">_query()</span><span class="d">Single record lookup; exceptions swallowed.</span></div>
+      <div class="fnrow"><span class="fn">_finish_dns()</span><span class="d">Hygiene flags: dangling CNAME, private IP in public DNS, dns_fail.</span></div>
+    </div>
+    <div class="card alt" style="margin-top:1rem">
+      <div class="k">doh.py — DohResolver</div>
+      <div class="fnrow"><span class="fn">query()</span><span class="d">Record values over HTTPS (RFC 8484 JSON). Works where UDP:53 is blocked.</span></div>
+      <div class="fnrow"><span class="fn">has_cname() · resolves()</span><span class="d">Chain-following helpers for the DoH path.</span></div>
+    </div>
+    <div class="callout good" style="margin-top:1rem"><b>Why DoH matters:</b> locked-down networks and proxied egress often block UDP:53. The tool still resolves over HTTPS.</div>
+  </div>
+</section>
+
+<!-- 8 http_probe -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · http_probe.py</p>
+    <h2>Liveness, HTTP &amp; TLS</h2>
+    <div class="card">
+      <div class="fnrow"><span class="fn">probe_http()</span><span class="d">Main entry. TCP-checks web ports, HTTPS-first GET (HTTP fallback), captures status, redirect chain, title, headers, cookies, timing; reads TLS.</span></div>
+      <div class="fnrow"><span class="fn">check_ports() · tcp_open()</span><span class="d">Which ports accept a connection. Admin/DB ports only on direct hosts, opt-in.</span></div>
+      <div class="fnrow"><span class="fn">_tls_info()</span><span class="d">Certificate issuer + expiry, with near-expiry / expired notes.</span></div>
+      <div class="fnrow"><span class="fn">_looks_like_waf_block()</span><span class="d">Classify a 403/429/503 challenge as <code>waf_blocked</code>, not a real app error.</span></div>
+      <div class="fnrow"><span class="fn">_fetch_fingerprint_paths()</span><span class="d">GET a few benign public paths for stronger fingerprinting (no payloads).</span></div>
+    </div>
+    <p class="muted" style="margin-top:.8rem">Default web ports: <code>443, 80, 8443, 8080, 8000, 3000, 5000, 9000</code>. Extra (opt-in, direct only): <code>22, 3389, 3306, 5432, 6379, 27017, …</code></p>
+  </div>
+</section>
+
+<!-- 9 cdn + classify -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · cdn.py + classify.py</p>
+    <h2>Edge detection &amp; classification</h2>
+    <div class="grid two">
+      <div class="card">
+        <div class="k">cdn.py — CdnMatcher</div>
+        <div class="fnrow"><span class="fn">detect()</span><span class="d">Combine all signals by weighted vote → provider / none / unknown + confidence.</span></div>
+        <div class="fnrow"><span class="fn">by_cname()</span><span class="d">Provider by CNAME suffix.</span></div>
+        <div class="fnrow"><span class="fn">by_headers()</span><span class="d">Provider by header / cookie.</span></div>
+        <div class="fnrow"><span class="fn">by_ip()</span><span class="d">Provider by IP-range membership.</span></div>
+      </div>
+      <div class="card alt">
+        <div class="k">classify.py</div>
+        <div class="fnrow"><span class="fn">classify()</span><span class="d">Label each host.</span></div>
+        <ul class="clean" style="margin-top:.5rem">
+          <li><b>own-infra</b> — our IPs / CDN → in scope</li>
+          <li><b>third-party-saas</b> — Zendesk, HubSpot… → recorded, <b>not probed</b></li>
+          <li><b>suspicious</b> — dangling / private IP</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:.8rem">Auto-detected across Cloudflare, Akamai, Fastly, CloudFront, Azure Front Door, Imperva, Sucuri, F5, AWS ALB. Override IP ranges with <code>signatures/cdn_ranges.json</code>.</p>
+  </div>
+</section>
+
+<!-- 10 fingerprint -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · fingerprint.py</p>
+    <h2>The signature engine</h2>
+    <div class="grid two">
+      <div class="card">
+        <div class="k">Functions</div>
+        <div class="fnrow"><span class="fn">Fingerprinter.run()</span><span class="d">Evaluate every signature; capture versions; apply <code>implies</code>; sort by category.</span></div>
+        <div class="fnrow"><span class="fn">Signature.match()</span><span class="d">Match headers, server, cookies, HTML, paths → Detection with evidence.</span></div>
+      </div>
+      <div class="card alt">
+        <div class="k">Signals (any match wins)</div>
+        <ul class="clean">
+          <li><b>headers</b> — e.g. <code>X-Powered-By</code></li>
+          <li><b>cookies</b> — e.g. <code>laravel_session</code></li>
+          <li><b>html</b> — body markers</li>
+          <li><b>paths</b> — path + status + body</li>
+          <li><b>version</b> — <code>(?P&lt;version&gt;…)</code> group</li>
+          <li><b>implies</b> — Laravel ⇒ PHP</li>
+        </ul>
+      </div>
+    </div>
+    <p class="eyebrow" style="margin-top:1rem">Add a technology — no code</p>
+<pre><span class="c"># signatures/custom.yaml</span>
+<span class="a">"My Framework"</span>:
+  category: backend
+  confidence: high
+  headers:
+    X-Powered-By: <span class="g">"MyFramework"</span>
+  implies: [<span class="g">"Node.js"</span>]</pre>
+    <p class="muted"><b>Frontend ≠ backend:</b> Angular/React/Vue are reported in their own category — "Angular found" is never misread as "Node found".</p>
+  </div>
+</section>
+
+<!-- 11 advisories -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · advisories.py</p>
+    <h2>Advisory correlation</h2>
+    <p class="muted">Map a CVE to a technology + version ranges. <b>Version/inventory logic only — never exploitation.</b></p>
+    <div class="grid two" style="margin-top:.6rem">
+      <div class="card">
+        <div class="k">Verdict logic — Advisory.evaluate()</div>
+        <div class="tablewrap"><table>
+          <tr><th>Verdict</th><th>When</th></tr>
+          <tr><td><span class="pill affected">affected</span></td><td>tech present <b>and</b> version in range</td></tr>
+          <tr><td><span class="pill likely">likely</span></td><td>present, version unknown, exposure hint met</td></tr>
+          <tr><td><span class="pill possible">possible</span></td><td>present, version not observable</td></tr>
+          <tr><td><span class="pill ok">not-detected</span></td><td>not seen / version out of range</td></tr>
+          <tr><td><span class="pill unknown">unknown</span></td><td>blocked / unreachable</td></tr>
+        </table></div>
+      </div>
+      <div class="card alt">
+        <div class="k">A profile is one YAML file</div>
+<pre>id: PHP2SHELL-2026
+tech: PHP
+affected:
+  - <span class="g">">=8.3.0,&lt;8.3.36"</span>
+  - <span class="g">">=8.2.0,&lt;8.2.35"</span>
+  - <span class="g">"&lt;8.2.0"</span>
+action: <span class="g">"Upgrade + restart FPM"</span></pre>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:.8rem"><b>Honesty by design:</b> most runtimes (Node.js especially) don't expose a version over HTTP, so verdicts are often <span class="pill possible">possible</span>/<span class="pill likely">likely</span> → confirm with owner. The tool never fakes a yes/no.</div>
+  </div>
+</section>
+
+<!-- 12 externals + store + report -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Module · externals.py · store.py · report.py</p>
+    <h2>Integrations, history &amp; output</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="k">externals.py (optional)</div>
+        <div class="fnrow"><span class="fn">available()</span><span class="d">Which tools are on PATH.</span></div>
+        <div class="fnrow"><span class="fn">httpx_enrich()</span><span class="d">ProjectDiscovery httpx — status, CDN, Wappalyzer tech.</span></div>
+        <div class="fnrow"><span class="fn">nuclei_detect()</span><span class="d"><b>Detection templates only</b> — intrusive tags excluded.</span></div>
+      </div>
+      <div class="card">
+        <div class="k">store.py — Store</div>
+        <div class="fnrow"><span class="fn">save() · load_run()</span><span class="d">Persist / reload a run.</span></div>
+        <div class="fnrow"><span class="fn">diff_previous()</span><span class="d">New/gone hosts, tech &amp; CDN changes.</span></div>
+        <p class="muted" style="margin-top:.4rem">Powers <code>--from-last-run</code>.</p>
+      </div>
+      <div class="card alt">
+        <div class="k">report.py</div>
+        <div class="fnrow"><span class="fn">export_xlsx()</span><span class="d">Summary, Assets, Tech, DNS, Flags, Adv-&lt;id&gt;.</span></div>
+        <div class="fnrow"><span class="fn">export_json()</span><span class="d">Full results for automation.</span></div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:.8rem">The pure-Python path works with none of the external tools installed — they add speed and breadth, never a dependency.</p>
+  </div>
+</section>
+
+<!-- 13 THE WORKFLOW -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">In practice</p>
+    <h2>The emergency workflow</h2>
+<pre><span class="c"># 1 · Inventory everything → Excel + JSON in ./output/</span>
+python scan.py --input records.csv
+
+<span class="c"># 2 · A PHP CVE drops. Triage against the last run —</span>
+<span class="c">#     NO new traffic is sent.</span>
+python scan.py --from-last-run --advisory php2shell
+
+<span class="c"># 3 · Find every host running a given stack</span>
+python scan.py --input records.csv --tech <span class="a">nodejs,angular,wordpress</span>
+
+<span class="c"># 4 · Restricted network? Resolve over HTTPS</span>
+python scan.py --input records.csv --dns-mode <span class="a">doh</span></pre>
+    <div class="callout good"><b>The payoff:</b> 200 hostnames become a short list of the handful that need a human — in seconds.</div>
+  </div>
+</section>
+
+<!-- 14 OUTPUT -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Deliverables</p>
+    <h2>What you get out</h2>
+    <div class="grid">
+      <div class="card"><div class="k">Excel workbook</div><ul>
+        <li><b>Summary</b> — counts &amp; coverage</li>
+        <li><b>Assets</b> — one row per host</li>
+        <li><b>Tech</b> — host × tech + evidence</li>
+        <li><b>DNS</b> — full records</li>
+        <li><b>Flags</b> — dangling, no-CDN, TLS</li>
+        <li><b>Adv-&lt;id&gt;</b> — colour-coded verdicts</li></ul></div>
+      <div class="card"><div class="k">JSON</div>
+        <p class="muted">Full structured results — feed dashboards, ticketing, SIEM.</p>
+<pre style="font-size:.7rem">jq '.[] | select(
+ .advisories["PHP2SHELL-2026"]
+ .verdict=="affected")
+ | .hostname'</pre></div>
+      <div class="card alt"><div class="k">SQLite history</div><ul>
+        <li>Every run stored</li>
+        <li>Run-to-run <b>diff</b></li>
+        <li>Offline <code>--from-last-run</code></li>
+        <li>Continuous EASM via cron</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 SAFETY / LIMITS -->
+<section class="slide">
+  <div class="wrap">
+    <p class="eyebrow">Scope &amp; honesty</p>
+    <h2>Guardrails &amp; limits</h2>
+    <div class="grid two">
+      <div class="card">
+        <div class="k">Safety boundaries</div>
+        <ul class="clean">
+          <li><b>No exploitation</b>, no WAF bypass, no payloads</li>
+          <li>nuclei limited to <b>detection</b> tags</li>
+          <li>SaaS targets recorded, <b>not probed</b></li>
+          <li>Per-host rate limiting (<code>--rps</code>)</li>
+          <li>Authorised assets only · SOC informed</li>
+        </ul>
+      </div>
+      <div class="card alt">
+        <div class="k">Honest limits</div>
+        <ul class="clean">
+          <li>WAF / <code>expose_php=Off</code> can hide signals</li>
+          <li>Most runtimes hide their version over HTTP</li>
+          <li>Verdicts lean <span class="pill possible">possible</span>/<span class="pill likely">likely</span>, by design</li>
+          <li>Run from a cloud VM, not an allowlisted office IP</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout accent" style="margin-top:1rem"><b>Pair it with internal inventory</b> — osquery, image scanning (Trivy/Grype), dependency manifests — for authoritative version data. External + internal = the full picture.</div>
+  </div>
+</section>
+
+<!-- 16 CLOSE -->
+<section class="slide">
+  <div class="wrap" style="display:flex;flex-direction:column;justify-content:center;height:100%">
+    <p class="eyebrow">Getting started</p>
+    <h2>Clone, scan, triage</h2>
+<pre>git clone https://github.com/<span class="w">YOURORG</span>/surface-scan
+cd surface-scan
+pip install -r requirements.txt
+
+python scan.py --input records.csv</pre>
+    <div class="grid" style="margin-top:1rem">
+      <div class="card"><div class="k">Contribute</div><p class="muted">Signatures &amp; advisories are plain YAML — the easiest, most valuable PRs. CI runs tests on every push.</p></div>
+      <div class="card"><div class="k">Docs</div><p class="muted">architecture · usage · signatures · advisories · output — all in <code>/docs</code>.</p></div>
+      <div class="card alt"><div class="k">Tests</div><p class="muted">30+ unit &amp; mock-server tests, plus a full pipeline test. All green.</p></div>
+    </div>
+    <p class="hint">surface-scan · defensive external attack-surface inventory · MIT</p>
+  </div>
+</section>
+
+</div>
+
+<div id="chrome">
+  <div id="brand">surface-scan</div>
+  <div class="dots" id="dots"></div>
+  <div style="display:flex;align-items:center;gap:.6rem">
+    <span id="counter">01 / 16</span>
+    <button id="themebtn" title="Toggle theme">◐</button>
+    <div class="navbtns">
+      <button class="nav" id="prev" aria-label="Previous slide">‹ Prev</button>
+      <button class="nav" id="next" aria-label="Next slide">Next ›</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0, n = slides.length;
+  var bar = document.getElementById('bar');
+  var counter = document.getElementById('counter');
+  var dots = document.getElementById('dots');
+  function pad(x){return (x<9?'0':'')+(x+1);}
+  slides.forEach(function(_,idx){
+    var b=document.createElement('button');
+    b.className='dot'+(idx===0?' on':'');
+    b.setAttribute('aria-label','Go to slide '+(idx+1));
+    b.addEventListener('click',function(){go(idx);});
+    dots.appendChild(b);
+  });
+  var dotEls = Array.prototype.slice.call(dots.children);
+  function go(x){
+    i = Math.max(0, Math.min(n-1, x));
+    slides.forEach(function(s,idx){s.classList.toggle('active', idx===i); if(idx===i) s.scrollTop=0;});
+    dotEls.forEach(function(d,idx){d.classList.toggle('on', idx===i);});
+    bar.style.width = ((i)/(n-1)*100)+'%';
+    counter.textContent = pad(i)+' / '+n;
+    try{location.hash = 's'+(i+1);}catch(e){}
+  }
+  function next(){go(i+1);} function prev(){go(i-1);}
+  document.getElementById('next').addEventListener('click',next);
+  document.getElementById('prev').addEventListener('click',prev);
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home'){go(0);} else if(e.key==='End'){go(n-1);}
+    else if(e.key==='f'||e.key==='F'){toggleFs();}
+  });
+  // touch swipe
+  var sx=0,sy=0;
+  document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){ dx<0?next():prev(); }
+  },{passive:true});
+  function toggleFs(){
+    try{ if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen&&document.exitFullscreen();} }catch(e){}
+  }
+  // theme toggle
+  var tb=document.getElementById('themebtn');
+  tb.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var mql=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = cur? cur==='dark' : mql;
+    document.documentElement.setAttribute('data-theme', isDark?'light':'dark');
+  });
+  // deep link
+  var m=(location.hash||'').match(/^#s(\d+)$/);
+  if(m){ go(parseInt(m[1],10)-1); } else { go(0); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Your own signatures and overrides. Same schema as base.yaml.
+# A key here with the same name as one in base.yaml is loaded in addition;
+# to override, give it the same name and it replaces the base entry at lookup.
+#
+# Example — detect an internal app by a custom header:
+#
+# "Acme Internal App":
+#   category: backend
+#   confidence: high
+#   headers:
+#     X-Acme-App: ".+"

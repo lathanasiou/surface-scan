@@ -1,0 +1,24 @@
+# surface-scan — Python dependencies
+# Install: pip install -r requirements.txt
+
+dnspython>=2.6.0      # DNS resolution (A/AAAA/CNAME/MX/TXT/NS/CAA, chain following)
+httpx>=0.27.0         # HTTP client for liveness + fingerprinting (HTTP/2 support)
+PyYAML>=6.0           # signature + advisory profiles
+openpyxl>=3.1.0       # Excel export
+packaging>=24.0       # semantic version comparison for advisory matching
+rich>=13.0            # progress / readable console output (optional, degrades gracefully)
+
+# ---------------------------------------------------------------------------
+# Optional external tools (NOT pip packages — install separately if you want
+# the tool to shell out to them for faster/stronger results). The script
+# auto-detects them on PATH and falls back to pure-Python when absent.
+#
+#   ProjectDiscovery dnsx   https://github.com/projectdiscovery/dnsx
+#   ProjectDiscovery httpx  https://github.com/projectdiscovery/httpx
+#   ProjectDiscovery nuclei https://github.com/projectdiscovery/nuclei   (safe detection templates only)
+#
+# Install (Go required):
+#   go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+#   go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+#   go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+# ---------------------------------------------------------------------------

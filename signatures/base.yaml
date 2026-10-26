@@ -1,0 +1,538 @@
+# Base technology signatures. Data, not code — add/override in custom.yaml.
+#
+# Fields per technology:
+#   category : language | backend | frontend | cms | server | analytics
+#   confidence: low | medium | high   (base confidence when matched)
+#   headers  : {Header-Name: regex}   (matched against that response header value)
+#   server   : regex                  (matched against Server header)
+#   cookies  : [regex, ...]           (matched against Set-Cookie / cookies)
+#   html     : [regex, ...]           (matched against the root page body)
+#   paths    : [{path: /x, status: 200, body: regex}]
+#   version  : regex with (?P<version>...) group  (optional)
+#   implies  : [OtherTech, ...]       (also record these when this matches)
+
+# ---------- Languages / runtimes ----------
+PHP:
+  category: language
+  confidence: high
+  headers:
+    X-Powered-By: "PHP"
+  cookies: ["^PHPSESSID="]
+  html: ["\\.php(\\?|\"|')"]
+  version: "PHP/(?P<version>\\d+\\.\\d+\\.\\d+)"
+
+"Node.js":
+  category: language
+  confidence: medium
+  headers:
+    X-Powered-By: "Express"
+  # Node rarely exposes itself directly; most detection is via its frameworks.
+
+Java:
+  category: language
+  confidence: medium
+  cookies: ["^JSESSIONID="]
+  headers:
+    X-Powered-By: "(Servlet|JSP|JBoss|WildFly)"
+
+".NET":
+  category: language
+  confidence: high
+  headers:
+    X-Powered-By: "ASP\\.NET"
+    X-AspNet-Version: ".+"
+    X-AspNetMvc-Version: ".+"
+  cookies: ["^ASP\\.NET_SessionId=", "^\\.AspNetCore"]
+  version: "X-AspNet-Version: (?P<version>[\\d.]+)"
+
+Python:
+  category: language
+  confidence: medium
+  server: "(gunicorn|uwsgi|Werkzeug|waitress)"
+  headers:
+    X-Powered-By: "(Python|Flask|Django)"
+
+Ruby:
+  category: language
+  confidence: medium
+  server: "(Phusion Passenger|thin|puma|WEBrick|Unicorn)"
+  cookies: ["^_session_id="]
+
+Go:
+  category: language
+  confidence: low
+  server: "^Go-http-client"
+
+# ---------- Backend frameworks ----------
+Laravel:
+  category: backend
+  confidence: high
+  # laravel_session is specific; XSRF-TOKEN alone is NOT (Axios/Angular set it too),
+  # so it is deliberately excluded here to avoid false positives on non-PHP apps.
+  cookies: ["^laravel_session="]
+  implies: ["PHP"]
+
+Symfony:
+  category: backend
+  confidence: medium
+  cookies: ["^sf_redirect=", "^symfony="]
+  implies: ["PHP"]
+
+Express:
+  category: backend
+  confidence: high
+  headers:
+    X-Powered-By: "Express"
+  implies: ["Node.js"]
+
+"Next.js":
+  category: backend
+  confidence: high
+  headers:
+    X-Powered-By: "Next\\.js"
+  html: ["/_next/static/", "__NEXT_DATA__"]
+  paths:
+    - {path: "/_next/static/", status: 200}
+  implies: ["Node.js", "React"]
+
+Nuxt:
+  category: backend
+  confidence: high
+  html: ["__NUXT__", "/_nuxt/"]
+  implies: ["Node.js", "Vue"]
+
+"Spring Boot":
+  category: backend
+  confidence: medium
+  headers:
+    X-Application-Context: ".+"
+  html: ["Whitelabel Error Page"]
+  implies: ["Java"]
+
+Django:
+  category: backend
+  confidence: high
+  cookies: ["^csrftoken=", "^django_language="]
+  implies: ["Python"]
+
+"Ruby on Rails":
+  category: backend
+  confidence: high
+  cookies: ["^_rails", "^_[a-zA-Z0-9]+_session="]
+  html: ["csrf-param", "data-turbo"]
+  implies: ["Ruby"]
+
+# ---------- Frontend frameworks (browser-side; say nothing about the server) ----------
+Angular:
+  category: frontend
+  confidence: high
+  html: ["ng-version=\"(?P<version>[\\d.]+)\"", "ng-app", "_nghost", "_ngcontent"]
+  version: "ng-version=\"(?P<version>[\\d.]+)\""
+
+React:
+  category: frontend
+  confidence: medium
+  html: ["data-reactroot", "data-reactid", "__REACT_DEVTOOLS", "react(?:-dom)?(?:\\.production)?\\.min\\.js"]
+
+"Vue.js":
+  category: frontend
+  confidence: medium
+  html: ["data-v-[0-9a-f]{8}", "__VUE__", "vue(?:\\.runtime)?(?:\\.min)?\\.js"]
+
+Svelte:
+  category: frontend
+  confidence: medium
+  html: ["svelte-[0-9a-z]+", "__svelte"]
+
+# ---------- CMS ----------
+WordPress:
+  category: cms
+  confidence: high
+  html: ["/wp-content/", "/wp-includes/", "<meta name=\"generator\" content=\"WordPress (?P<version>[\\d.]+)"]
+  paths:
+    - {path: "/wp-login.php", status: 200}
+  version: "WordPress (?P<version>[\\d.]+)"
+  implies: ["PHP"]
+
+Drupal:
+  category: cms
+  confidence: high
+  headers:
+    X-Generator: "Drupal"
+  html: ["/sites/default/files/", "Drupal.settings"]
+  implies: ["PHP"]
+
+Joomla:
+  category: cms
+  confidence: medium
+  html: ["/media/jui/", "content=\"Joomla"]
+  implies: ["PHP"]
+
+# ---------- Web servers ----------
+nginx:
+  category: server
+  confidence: high
+  server: "nginx"
+  version: "nginx/(?P<version>[\\d.]+)"
+
+Apache:
+  category: server
+  confidence: high
+  server: "Apache"
+  version: "Apache/(?P<version>[\\d.]+)"
+
+IIS:
+  category: server
+  confidence: high
+  server: "Microsoft-IIS"
+  version: "Microsoft-IIS/(?P<version>[\\d.]+)"
+
+LiteSpeed:
+  category: server
+  confidence: high
+  server: "LiteSpeed"
+
+Caddy:
+  category: server
+  confidence: medium
+  server: "Caddy"
+
+# ---------- Analytics / third-party ----------
+"Google Analytics":
+  category: analytics
+  confidence: low
+  html: ["google-analytics\\.com/analytics\\.js", "gtag\\(", "googletagmanager\\.com/gtm\\.js"]
+
+# ===========================================================================
+# EXTENDED COVERAGE — contributed signatures. Keep signals specific; prefer a
+# dedicated header/cookie over a generic HTML string. Add yours below.
+# ===========================================================================
+
+# ---------- More languages / runtimes ----------
+"ColdFusion":
+  category: language
+  confidence: high
+  cookies: ["^CFID=", "^CFTOKEN="]
+  headers: {X-Powered-By: "ColdFusion"}
+
+Perl:
+  category: language
+  confidence: medium
+  headers: {X-Powered-By: "(Perl|mod_perl)"}
+  server: "mod_perl"
+
+Elixir:
+  category: language
+  confidence: low
+  implies: []
+  server: "(Cowboy|Phoenix)"
+
+# ---------- More backend frameworks ----------
+NestJS:
+  category: backend
+  confidence: medium
+  headers: {X-Powered-By: "Express"}
+  html: ["nestjs"]
+  implies: ["Node.js"]
+
+Koa:
+  category: backend
+  confidence: medium
+  html: ["koa"]
+  implies: ["Node.js"]
+
+"FastAPI":
+  category: backend
+  confidence: medium
+  server: "uvicorn"
+  html: ["swagger-ui", "/openapi.json"]
+  implies: ["Python"]
+
+Flask:
+  category: backend
+  confidence: medium
+  server: "Werkzeug"
+  implies: ["Python"]
+
+Tornado:
+  category: backend
+  confidence: medium
+  server: "TornadoServer"
+  implies: ["Python"]
+
+"Phoenix":
+  category: backend
+  confidence: high
+  cookies: ["^_.*_key="]
+  server: "(Cowboy|Phoenix)"
+  implies: ["Elixir"]
+
+"CodeIgniter":
+  category: backend
+  confidence: medium
+  cookies: ["^ci_session="]
+  implies: ["PHP"]
+
+"CakePHP":
+  category: backend
+  confidence: medium
+  cookies: ["^CAKEPHP="]
+  implies: ["PHP"]
+
+"Yii":
+  category: backend
+  confidence: medium
+  cookies: ["^YII_CSRF_TOKEN=", "^_identity="]
+  implies: ["PHP"]
+
+"AdonisJS":
+  category: backend
+  confidence: medium
+  cookies: ["^adonis-session="]
+  implies: ["Node.js"]
+
+"Strapi":
+  category: backend
+  confidence: medium
+  headers: {X-Powered-By: "Strapi"}
+  implies: ["Node.js"]
+
+"ASP.NET Core":
+  category: backend
+  confidence: high
+  cookies: ["^\\.AspNetCore"]
+  server: "Kestrel"
+  implies: [".NET"]
+
+# ---------- More frontend frameworks / libraries ----------
+"Remix":
+  category: frontend
+  confidence: medium
+  html: ["__remixContext", "/build/_shared/"]
+
+"SvelteKit":
+  category: frontend
+  confidence: medium
+  html: ["__sveltekit", "/_app/immutable/"]
+
+"Astro":
+  category: frontend
+  confidence: medium
+  html: ["astro-island", "<astro-", "/_astro/"]
+
+"Gatsby":
+  category: frontend
+  confidence: medium
+  html: ["___gatsby", "/page-data/", "gatsby-"]
+
+"Ember.js":
+  category: frontend
+  confidence: medium
+  html: ["ember-application", "data-ember", "/assets/vendor-"]
+
+"Alpine.js":
+  category: frontend
+  confidence: low
+  html: ["x-data=", "alpinejs"]
+
+"HTMX":
+  category: frontend
+  confidence: low
+  html: ["hx-get=", "hx-post=", "/htmx"]
+
+"jQuery":
+  category: frontend
+  confidence: low
+  html: ["jquery(?:-|\\.)(?P<version>[\\d.]+)?(?:\\.min)?\\.js"]
+
+# ---------- More web / app servers ----------
+OpenResty:
+  category: server
+  confidence: high
+  server: "openresty"
+  version: "openresty/(?P<version>[\\d.]+)"
+
+Tengine:
+  category: server
+  confidence: high
+  server: "Tengine"
+
+Tomcat:
+  category: server
+  confidence: high
+  server: "(Apache-Coyote|Tomcat)"
+  implies: ["Java"]
+
+Jetty:
+  category: server
+  confidence: high
+  server: "Jetty"
+  version: "Jetty\\((?P<version>[\\d.]+)"
+  implies: ["Java"]
+
+"Gunicorn":
+  category: server
+  confidence: high
+  server: "gunicorn"
+  version: "gunicorn/(?P<version>[\\d.]+)"
+  implies: ["Python"]
+
+"uWSGI":
+  category: server
+  confidence: high
+  server: "uWSGI"
+  implies: ["Python"]
+
+Kestrel:
+  category: server
+  confidence: high
+  server: "Kestrel"
+  implies: [".NET"]
+
+Traefik:
+  category: server
+  confidence: medium
+  server: "Traefik"
+
+"Phusion Passenger":
+  category: server
+  confidence: medium
+  server: "Phusion Passenger"
+
+Lighttpd:
+  category: server
+  confidence: high
+  server: "lighttpd"
+  version: "lighttpd/(?P<version>[\\d.]+)"
+
+Envoy:
+  category: server
+  confidence: medium
+  server: "envoy"
+
+Cowboy:
+  category: server
+  confidence: medium
+  server: "Cowboy"
+
+# ---------- More CMS / platforms ----------
+Ghost:
+  category: cms
+  confidence: high
+  headers: {X-Powered-By: "Express"}
+  html: ["content=\"Ghost (?P<version>[\\d.]+)", "ghost-"]
+  version: "Ghost (?P<version>[\\d.]+)"
+
+Magento:
+  category: cms
+  confidence: high
+  cookies: ["^X-Magento-", "^mage-"]
+  html: ["/static/version", "Magento", "mage/cookies"]
+  implies: ["PHP"]
+
+PrestaShop:
+  category: cms
+  confidence: medium
+  cookies: ["^PrestaShop-"]
+  html: ["prestashop"]
+  implies: ["PHP"]
+
+TYPO3:
+  category: cms
+  confidence: medium
+  html: ["typo3", "/typo3conf/", "/typo3temp/"]
+  implies: ["PHP"]
+
+"Craft CMS":
+  category: cms
+  confidence: medium
+  cookies: ["^CraftSessionId="]
+  headers: {X-Powered-By: "Craft CMS"}
+  implies: ["PHP"]
+
+Umbraco:
+  category: cms
+  confidence: medium
+  html: ["/umbraco/", "umbraco"]
+  implies: [".NET"]
+
+Sitecore:
+  category: cms
+  confidence: medium
+  cookies: ["^SC_ANALYTICS_GLOBAL_COOKIE="]
+  implies: [".NET"]
+
+"Adobe Experience Manager":
+  category: cms
+  confidence: medium
+  html: ["/etc.clientlibs/", "/content/dam/", "cq-"]
+  implies: ["Java"]
+
+Shopify:
+  category: cms
+  confidence: high
+  headers: {X-ShopId: ".+", X-Shopify-Stage: ".+"}
+  html: ["cdn.shopify.com", "Shopify.theme"]
+
+Wix:
+  category: cms
+  confidence: high
+  headers: {X-Wix-Request-Id: ".+"}
+  html: ["static.wixstatic.com", "wix-"]
+
+Squarespace:
+  category: cms
+  confidence: high
+  headers: {X-ServedBy: "squarespace"}
+  html: ["static1.squarespace.com", "squarespace.com"]
+
+# ---------- More analytics / RUM / monitoring tags ----------
+"Google Tag Manager":
+  category: analytics
+  confidence: low
+  html: ["googletagmanager\\.com/gtm\\.js", "dataLayer"]
+
+Segment:
+  category: analytics
+  confidence: low
+  html: ["cdn.segment.com/analytics.js", "analytics.track"]
+
+Matomo:
+  category: analytics
+  confidence: low
+  html: ["matomo.js", "piwik.js", "_paq"]
+
+"Plausible Analytics":
+  category: analytics
+  confidence: low
+  html: ["plausible.io/js", "data-domain="]
+
+Hotjar:
+  category: analytics
+  confidence: low
+  html: ["static.hotjar.com", "hjSetting", "_hjSettings"]
+
+Mixpanel:
+  category: analytics
+  confidence: low
+  html: ["cdn.mxpnl.com", "mixpanel"]
+
+Amplitude:
+  category: analytics
+  confidence: low
+  html: ["cdn.amplitude.com", "amplitude.getInstance"]
+
+"New Relic":
+  category: analytics
+  confidence: low
+  html: ["NREUM", "js-agent.newrelic.com"]
+
+Sentry:
+  category: analytics
+  confidence: low
+  html: ["sentry-cdn.com", "Sentry.init", "browser.sentry-cdn.com"]
+
+"Facebook Pixel":
+  category: analytics
+  confidence: low
+  html: ["connect.facebook.net/.+/fbevents.js", "fbq\\("]

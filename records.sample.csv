@@ -1,0 +1,6 @@
+hostname,type,target
+www.yourco.com,A,203.0.113.10
+api.yourco.com,CNAME,d123.cloudfront.net
+help.yourco.com,CNAME,yourco.zendesk.com
+legacy.yourco.com,A,198.51.100.5
+old.yourco.com,CNAME,deleted-bucket.s3.amazonaws.com

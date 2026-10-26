@@ -1,0 +1,12 @@
+id: PHP2SHELL-2026
+name: "PHP2Shell (CVE-2026-109618 / CVE-2026-109619)"
+tech: PHP
+# Fixed in 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12. Branches below those are affected;
+# 8.1 and older are EOL (treat any detected version <= 8.1.x as affected).
+affected:
+  - ">=8.5.0,<8.5.12"
+  - ">=8.4.0,<8.4.27"
+  - ">=8.3.0,<8.3.36"
+  - ">=8.2.0,<8.2.35"
+  - "<8.2.0"
+action: "Upgrade PHP to a fixed release and RESTART Apache/PHP-FPM/workers. EOL branches: apply vendor backport or upgrade."
